@@ -1,13 +1,14 @@
 [tool.poetry]
-name = "pfeiffer-tc400"
+name = "pfeiffer-turbo"
 version = "0.1.0"
 description = ""
 authors = ["ograsdijk <o.grasdijk@gmail.com>"]
 readme = "README.md"
-packages = [{include = "pfeiffer_tc400"}]
+packages = [{include = "pfeiffer_turbo"}]
 
 [tool.poetry.dependencies]
 python = "^3.9"
+PyVISA = "^1.13.0"
 
 
 [build-system]

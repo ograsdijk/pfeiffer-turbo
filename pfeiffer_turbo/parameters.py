@@ -100,43 +100,43 @@ class Parameters(Enum):
 
 
 @dataclass
-class Parameter:
+class ParameterInfo:
     designation: str
     data_type: DataType
-    access: StopIteration
-    min: Optional[int] = None
-    max: Optional[int] = None
+    access: str
+    min: Optional[Union[int, float]] = None
+    max: Optional[Union[int, float]] = None
     unit: Optional[str] = None
     default: Optional[Union[int, float, str]] = None
     options: Optional[dict[int, str]] = None
 
 
 parameters = {
-    Parameters.PumpgStatn: Parameter(
+    Parameters.PumpgStatn: ParameterInfo(
         designation="Pumping station", data_type=DataType.BOOL, access="RW"
     ),
-    Parameters.EnableVent: Parameter("Enable venting", DataType.BOOL, "RW"),
-    Parameters.Brake: Parameter("Brake", DataType.BOOL, "RW"),
-    Parameters.MotorPump: Parameter("Motor pump", DataType.BOOL, "RW"),
-    Parameters.GasMode: Parameter(
+    Parameters.EnableVent: ParameterInfo("Enable venting", DataType.BOOL, "RW"),
+    Parameters.Brake: ParameterInfo("Brake", DataType.BOOL, "RW"),
+    Parameters.MotorPump: ParameterInfo("Motor pump", DataType.BOOL, "RW"),
+    Parameters.GasMode: ParameterInfo(
         "Gas mode",
         DataType.SHORT,
         "RW",
         options={0: "heavy gas", 1: "light gas", 2: "helium"},
     ),
-    Parameters.CfgRemote: Parameter(
+    Parameters.CfgRemote: ParameterInfo(
         "Configuration remote",
         DataType.SHORT,
         "RW",
         options={0: "standard", 4: "relais inverted"},
     ),
-    Parameters.VentMode: Parameter(
+    Parameters.VentMode: ParameterInfo(
         "Venting mode",
         DataType.SHORT,
         "RW",
         options={0: "delayed venting", 1: "no venting", 2: "direct venting"},
     ),
-    Parameters.CfgRelR1: Parameter(
+    Parameters.CfgRelR1: ParameterInfo(
         "Configuration relay 1",
         DataType.SHORT,
         "RW",
@@ -159,7 +159,7 @@ parameters = {
             15: "pumping station",
         },
     ),
-    Parameters.CfgRelR2: Parameter(
+    Parameters.CfgRelR2: ParameterInfo(
         "Configuration relay 2",
         DataType.SHORT,
         "RW",
@@ -182,7 +182,7 @@ parameters = {
             15: "pumping station",
         },
     ),
-    Parameters.CfgRelR3: Parameter(
+    Parameters.CfgRelR3: ParameterInfo(
         "Configuration relay 3",
         DataType.SHORT,
         "RW",
@@ -205,8 +205,8 @@ parameters = {
             15: "pumping station",
         },
     ),
-    Parameters.SealingGas: Parameter("Sealing gas", DataType.BOOL, "R"),
-    Parameters.CfgAo1: Parameter(
+    Parameters.SealingGas: ParameterInfo("Sealing gas", DataType.BOOL, "R"),
+    Parameters.CfgAo1: ParameterInfo(
         "Configuration output AO1",
         DataType.SHORT,
         "RW",
@@ -219,13 +219,13 @@ parameters = {
             5: "follows AI1",
         },
     ),
-    Parameters.CfgAi1: Parameter(
+    Parameters.CfgAi1: ParameterInfo(
         designation="Configuration input AI1",
         data_type=DataType.SHORT,
         access="RW",
         options={0: "disconnected", 1: "set value rot. speed setting mode"},
     ),
-    Parameters.CtrlViaInt: Parameter(
+    Parameters.CtrlViaInt: ParameterInfo(
         designation="Control via interface",
         data_type=DataType.SHORT,
         access="RW",
@@ -238,138 +238,146 @@ parameters = {
             255: "unlock interface selection",
         },
     ),
-    Parameters.RemotePrio: Parameter("Remote priority", DataType.BOOL, "R", 0, 1),
-    Parameters.SpdSwPtAtt: Parameter(
+    Parameters.RemotePrio: ParameterInfo("Remote priority", DataType.BOOL, "R", 0, 1),
+    Parameters.SpdSwPtAtt: ParameterInfo(
         "Rotation speed switch point attained ",
         DataType.BOOL,
         "R",
         0,
         1,
     ),
-    Parameters.ErrorCode: Parameter("Error code", DataType.STR, "R"),
-    Parameters.OvTempElec: Parameter(
+    Parameters.ErrorCode: ParameterInfo("Error code", DataType.STR, "R"),
+    Parameters.OvTempElec: ParameterInfo(
         "Excess temperature electronic drive unit",
         DataType.BOOL,
         "R",
         0,
         1,
     ),
-    Parameters.OvTempPump: Parameter(
+    Parameters.OvTempPump: ParameterInfo(
         "Excess temperature pump", DataType.BOOL, "R", 0, 1
     ),
-    Parameters.SetSpdAtt: Parameter(
+    Parameters.SetSpdAtt: ParameterInfo(
         "Set rotation speed attained", DataType.BOOL, "R", 0, 1
     ),
-    Parameters.PumpAccel: Parameter("Pump accellerates", DataType.BOOL, "R", 0, 1),
-    Parameters.SetRotSpd: Parameter(
+    Parameters.PumpAccel: ParameterInfo("Pump accellerates", DataType.BOOL, "R", 0, 1),
+    Parameters.SetRotSpd: ParameterInfo(
         "Set rotation speed [Hz]", DataType.INT, "R", 0, 999999, "Hz"
     ),
-    Parameters.ActualSpd: Parameter(
+    Parameters.ActualSpd: ParameterInfo(
         "Active rotation speed [Hz]", DataType.INT, "R", 0, 999999, "Hz"
     ),
-    Parameters.DrvCurrent: Parameter(
+    Parameters.DrvCurrent: ParameterInfo(
         "Drive current [A]", DataType.FLOAT, "R", 0, 9999.99, "A"
     ),
-    Parameters.OpHrsPump: Parameter(
+    Parameters.OpHrsPump: ParameterInfo(
         "Operating hours pump [h]", DataType.INT, "R", 0, 65535, "h"
     ),
-    Parameters.FwVersion: Parameter(
+    Parameters.FwVersion: ParameterInfo(
         "Firmware version electronic drive unit", DataType.STR, "R"
     ),
-    Parameters.DrvVoltage: Parameter(
+    Parameters.DrvVoltage: ParameterInfo(
         "Drive voltage [V]", DataType.FLOAT, "R", 0, 9999.99, "V"
     ),
-    Parameters.OpHrsElec: Parameter(
+    Parameters.OpHrsElec: ParameterInfo(
         "Operating hours electronic drive unit [h]", DataType.INT, "R", 0, 65535, "h"
     ),
-    Parameters.NominalSpeed: Parameter(
+    Parameters.NominalSpeed: ParameterInfo(
         "Nominal rotation speed [Hz]", DataType.INT, "R", 0, 999999, "Hz"
     ),
-    Parameters.DrvPower: Parameter(
+    Parameters.DrvPower: ParameterInfo(
         "Drive power [W]", DataType.INT, "R", 0, 999999, "W"
     ),
-    Parameters.PumpCycles: Parameter("Pump cycles", DataType.INT, "R", 0, 65535),
-    Parameters.TempPwrStg: Parameter(
+    Parameters.PumpCycles: ParameterInfo("Pump cycles", DataType.INT, "R", 0, 65535),
+    Parameters.TempPwrStg: ParameterInfo(
         "Temperature power stage [C]", DataType.INT, "R", unit="C"
     ),
-    Parameters.TempElec: Parameter(
+    Parameters.TempElec: ParameterInfo(
         "Temperature electronic [C]", DataType.INT, "R", unit="C"
     ),
-    Parameters.BearngWear: Parameter(
+    Parameters.BearngWear: ParameterInfo(
         "Wear conditions safety bearing [%]", DataType.INT, "R", unit="%"
     ),
-    Parameters.TempPmpBot: Parameter(
+    Parameters.TempPmpBot: ParameterInfo(
         "Temperature pump bottom part [C]", DataType.INT, "R", unit="C"
     ),
-    Parameters.AccelDecel: Parameter(
+    Parameters.AccelDecel: ParameterInfo(
         "Acceleration / Deceleration [rpm/s]", DataType.INT, "R", unit="rpm/s"
     ),
-    Parameters.RotorImbal: Parameter(
+    Parameters.RotorImbal: ParameterInfo(
         "Rotor out-of-balance [%]", DataType.INT, "R", unit="%"
     ),
-    Parameters.TempBearng: Parameter(
+    Parameters.TempBearng: ParameterInfo(
         "Temperature bearing", DataType.INT, "R", unit="C"
     ),
-    Parameters.TempMotor: Parameter("Temperature motor", DataType.INT, "R", unit="C"),
-    Parameters.ElecName: Parameter("Name of electronic drive unit", DataType.STR, "R"),
-    Parameters.HwVersion: Parameter("Name of electronic drive unit", DataType.STR, "R"),
-    Parameters.TempRotor: Parameter("Temperature rotor", DataType.INT, "R", unit="C"),
-    Parameters.SetRotSpd_rpm: Parameter(
+    Parameters.TempMotor: ParameterInfo(
+        "Temperature motor", DataType.INT, "R", unit="C"
+    ),
+    Parameters.ElecName: ParameterInfo(
+        "Name of electronic drive unit", DataType.STR, "R"
+    ),
+    Parameters.HwVersion: ParameterInfo(
+        "Name of electronic drive unit", DataType.STR, "R"
+    ),
+    Parameters.TempRotor: ParameterInfo(
+        "Temperature rotor", DataType.INT, "R", unit="C"
+    ),
+    Parameters.SetRotSpd_rpm: ParameterInfo(
         "Set rotation speed [rpm]", DataType.INT, "R", unit="rpm"
     ),
-    Parameters.ActualSpd_rpm: Parameter(
+    Parameters.ActualSpd_rpm: ParameterInfo(
         "Actual rotation speed [rpm]", DataType.INT, "R", unit="rpm"
     ),
-    Parameters.NominalSpd_rpm: Parameter(
+    Parameters.NominalSpd_rpm: ParameterInfo(
         "Nominal rotation speed [rpm]", DataType.INT, "R", unit="rpm"
     ),
-    Parameters.RuTimeSval: Parameter(
+    Parameters.RuTimeSval: ParameterInfo(
         "Set value run-up time [min]",
         DataType.INT,
         "RW",
         unit="min",
     ),
-    Parameters.SpdSval: Parameter(
+    Parameters.SpdSval: ParameterInfo(
         "Set value in rot. speed setting mode [%]",
         DataType.INT,
         "RW",
         unit="%",
     ),
-    Parameters.PwrSval: Parameter(
+    Parameters.PwrSval: ParameterInfo(
         "Set value power consumption",
         DataType.SHORT,
         "RW",
         unit="%",
     ),
-    Parameters.StbySval: Parameter(
+    Parameters.StbySval: ParameterInfo(
         "Set value roation speed at standby [%]",
         DataType.FLOAT,
         "RW",
         unit="%",
     ),
-    Parameters.VentSpd: Parameter(
+    Parameters.VentSpd: ParameterInfo(
         "Venting rot. speed at delayed venting",
         DataType.SHORT,
         "RW",
         unit="%",
     ),
-    Parameters.VentTime: Parameter(
+    Parameters.VentTime: ParameterInfo(
         "Venting time at delayed venting [s]",
         DataType.INT,
         "RW",
         unit="[s]",
     ),
-    Parameters.NomSpdConf: Parameter(
+    Parameters.NomSpdConf: ParameterInfo(
         "Nominal rotation speed confirmation [Hz]",
         DataType.INT,
         "RW",
         unit="[Hz]",
     ),
-    Parameters.RS485Adr: Parameter("RS485 device address", DataType.INT, "RW"),
+    Parameters.RS485Adr: ParameterInfo("RS485 device address", DataType.INT, "RW"),
 }
 
 for i in range(1, 11):
-    parameters[Parameters[f"ErrHist{i}"]] = Parameter(
+    parameters[Parameters[f"ErrHist{i}"]] = ParameterInfo(
         f"Error code history, pos. {i}", DataType.STR, "R"
     )
 
@@ -387,14 +395,14 @@ _options = {
 }
 for i in range(1, 3):
     parameter = Parameters[f"CfgAccA{i}"]
-    parameters[parameter] = Parameter(
+    parameters[parameter] = ParameterInfo(
         f"Configuration accessory connection A{i}",
         DataType.SHORT,
         "RW",
         options=_options,
     )
     parameter = Parameters[f"CfgAccB{i}"]
-    parameters[parameter] = Parameter(
+    parameters[parameter] = ParameterInfo(
         f"Configuration accessory connection B{i}",
         DataType.SHORT,
         "RW",
@@ -411,7 +419,7 @@ _options = {
 }
 for i in range(1, 4):
     parameter = Parameters[f"CfgDi{i}"]
-    parameters[parameter] = Parameter(
+    parameters[parameter] = ParameterInfo(
         f"Configuration input DI{i}",
         DataType.SHORT,
         "RW",
@@ -438,7 +446,7 @@ _options = {
 }
 for i in range(1, 3):
     parameter = Parameters[f"CfgDo{i}"]
-    parameters[parameter] = Parameter(
+    parameters[parameter] = ParameterInfo(
         designation=f"Configuration output DO{i}",
         data_type=DataType.SHORT,
         access="RW",

@@ -1,6 +1,6 @@
 import re
 from enum import Enum, auto
-from typing import Sequence, Union
+from typing import Sequence, Union, cast
 
 import pyvisa
 from pyvisa import constants
@@ -73,19 +73,25 @@ class DriveUnit:
         if connection_type == ConnectionType.RS485:
             self.instrument: Union[
                 pyvisa.resources.SerialInstrument, pyvisa.resources.TCPIPSocket
-            ] = self.rm.open_resource(
-                resource_name=resource_name,
-                parity=constants.Parity.none,
-                data_bits=8,
-                baud_rate=9600,
-                read_termination="\r",
-                write_termination="\r",
+            ] = cast(
+                pyvisa.resources.SerialInstrument,
+                self.rm.open_resource(
+                    resource_name=resource_name,
+                    parity=constants.Parity.none,
+                    data_bits=8,
+                    baud_rate=9600,
+                    read_termination="\r",
+                    write_termination="\r",
+                ),
             )
         elif connection_type == ConnectionType.TCP:
-            self.instrument = self.rm.open_resource(
-                resource_name=f"TCPIP::{resource_name}::SOCKET",
-                read_termination="\r",
-                write_termination="\r",
+            self.instrument = cast(
+                pyvisa.resources.TCPIPSocket,
+                self.rm.open_resource(
+                    resource_name=f"TCPIP::{resource_name}::SOCKET",
+                    read_termination="\r",
+                    write_termination="\r",
+                ),
             )
 
         self._create_parameters(supported_parameters)

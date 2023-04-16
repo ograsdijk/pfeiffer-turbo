@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
-from typing import Optional, Union
+from typing import Optional, Union, cast
 
-from .parameters import DataLength, DataType, Parameter, Parameters, parameters
+from .parameters import DataLength, DataType, Parameters, parameters
 
 # pfeiffer telegram has the following format:
 # a2 a1 a0 | * 0 | n2 n1 n0 | l1 l0 | dn ... d0 | c2 c1 c0 | \r
@@ -18,7 +18,7 @@ class Telegram:
     address: int
     action: int
     parameter: Parameters
-    data: Optional[Union[str, int, float]] = None
+    data: Union[str, int, float]
     data_type: DataType = field(init=False)
     message: str = field(init=False)
     data_length: int = field(init=False)
@@ -46,9 +46,9 @@ class Telegram:
         # check if its a command/return message (1) or a query message (0)
         if self.action == 1:
             if self.data_type == DataType.FLOAT:
-                _data = str(int(data * 100))
+                _data = str(int(cast(str, data) * 100))
             elif self.data_type == DataType.BOOL:
-                _data = str(int(data)) * self.data_length
+                _data = str(int(cast(bool, data))) * self.data_length
             else:
                 _data = str(data)
         else:
@@ -68,16 +68,16 @@ class Telegram:
 
 
 def create_telegram(
-    parameter: Parameter,
+    parameter: Parameters,
     address: int,
     read_write: str = "R",
-    data: Optional[Union[str, int, float]] = None,
+    data: Union[str, int, float] = "=?",
 ) -> Telegram:
     """
     Construct a Telegram to send to a Pfeiffer turbo drive unit
 
     Args:
-        parameter (Parameter): paramter type
+        parameter (Parameters): parameter type
         address (int): drive unit address
         read_write (str, optional): specify read or write action. Defaults to "R".
         data (optional): data to send to drive unit.
@@ -140,7 +140,7 @@ def decode_telegram(message: str) -> Telegram:
     elif data_type in [DataType.INT, DataType.SHORT]:
         _data = int(data)
 
-    telegram = Telegram(address=address, action=action, data_type=data_type, data=_data)
+    telegram = Telegram(address=address, action=action, parameter=parameter, data=_data)
 
     if checksum != telegram.checksum:
         raise ValueError("Checksum incorrect")

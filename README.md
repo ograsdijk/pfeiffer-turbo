@@ -30,7 +30,7 @@ class DriveUnit:
         supported_parameters: Sequence[int],
     ):
 ```
-takes in a set of integers that correspond to pfeiffer vacuum parameters supported by the particular drive unit. Implemented vacuum parameters are seen in `parameters.py`. The getters and setters are then dynamically generated based on the `supported_parameters` and info in `parameters.py`; the enum `Parameters` contains all implemented pfeiffer vacuum parameters, and the dictionary `parameters` contains key, value pairs of `Parameters` and `Parameter`, where `Parameter` is a dataclass containing the implemenation information for a particular parameter:
+takes in a set of integers that correspond to pfeiffer vacuum parameters supported by the particular drive unit. Implemented vacuum parameters are seen in `parameters.py`. The getters and setters are then dynamically generated based on the `supported_parameters` and info in `parameters.py`; the enum `Parameters` contains all implemented pfeiffer vacuum parameters, and the dictionary `parameters` contains key, value pairs of `Parameters` and `ParameterInfo`, where `ParameterInfo` is a dataclass containing the implemenation information for a particular parameter:
 ```Python
 @dataclass
 class Parameter:

@@ -25,6 +25,8 @@ class DataLength:
 
 
 class Parameters(Enum):
+    Heating = 1
+    Standby = 2
     PumpgStatn = 10
     EnableVent = 12
     Brake = 13
@@ -112,6 +114,12 @@ class ParameterInfo:
 
 
 parameters = {
+    Parameters.Heating: ParameterInfo(
+        designation="heating", data_type=DataType.BOOL, access="RW"
+    ),
+    Parameters.Standby: ParameterInfo(
+        designation="standby", data_type=DataType.BOOL, access="RW"
+    ),
     Parameters.PumpgStatn: ParameterInfo(
         designation="Pumping station", data_type=DataType.BOOL, access="RW"
     ),

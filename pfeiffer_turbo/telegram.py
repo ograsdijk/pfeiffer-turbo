@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, Union, cast
+from typing import Union, cast
 
 from .parameters import DataLength, DataType, Parameters, parameters
 
@@ -18,7 +18,7 @@ class Telegram:
     address: int
     action: int
     parameter: Parameters
-    data: Union[str, int, float]
+    data: Union[bool, str, int, float]
     data_type: DataType = field(init=False)
     message: str = field(init=False)
     data_length: int = field(init=False)
@@ -71,7 +71,7 @@ def create_telegram(
     parameter: Parameters,
     address: int,
     read_write: str = "R",
-    data: Union[str, int, float] = "=?",
+    data: Union[bool, str, int, float] = "=?",
 ) -> Telegram:
     """
     Construct a Telegram to send to a Pfeiffer turbo drive unit
@@ -139,6 +139,8 @@ def decode_telegram(message: str) -> Telegram:
             raise ValueError(f"Cannot decode {data} as boolean")
     elif data_type in [DataType.INT, DataType.SHORT]:
         _data = int(data)
+    else:
+        _data = data
 
     telegram = Telegram(address=address, action=action, parameter=parameter, data=_data)
 

@@ -11,7 +11,7 @@ from .telegram import Telegram, create_telegram, decode_telegram
 
 class ConnectionType(Enum):
     RS485 = auto()
-    TCP = auto()
+    TCPIP = auto()
 
 
 def _make_property(parameter: Parameters):
@@ -170,3 +170,8 @@ class TM700(DriveUnit):
             connection_type=connection_type,
             supported_parameters=supported_parameters,
         )
+
+
+pump = TM700(
+    resource_name="10.10.222.8:12345", address=1, connection_type=ConnectionType.TCPIP
+)

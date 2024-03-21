@@ -170,8 +170,3 @@ class TM700(DriveUnit):
             connection_type=connection_type,
             supported_parameters=supported_parameters,
         )
-
-
-pump = TM700(
-    resource_name="10.10.222.8:12345", address=1, connection_type=ConnectionType.TCPIP
-)

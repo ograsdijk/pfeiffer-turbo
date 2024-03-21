@@ -84,7 +84,7 @@ class DriveUnit:
                     write_termination="\r",
                 ),
             )
-        elif connection_type == ConnectionType.TCP:
+        elif connection_type == ConnectionType.TCPIP:
             self.instrument = cast(
                 pyvisa.resources.TCPIPSocket,
                 self.rm.open_resource(

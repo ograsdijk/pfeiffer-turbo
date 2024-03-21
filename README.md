@@ -1,5 +1,5 @@
 # pfeiffer-turbo
-[![Python versions on PyPI](https://img.shields.io/pypi/pyversions/pfeiffer-turbo.svg)](https://pypi.python.org/pypi/precilaser/)
+[![Python versions on PyPI](https://img.shields.io/pypi/pyversions/pfeiffer-turbo.svg)](https://pypi.python.org/pypi/pfeiffer-turbo/)
 [![pfeiffer-turbo version on PyPI](https://img.shields.io/pypi/v/pfeiffer-turbo.svg "pfeiffer-turbo on PyPI")](https://pypi.python.org/pypi/pfeiffer-turbo/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)  
 Python interface RS485 connections for Pfeiffer HiPace turbo drive units. Currently only the TM700 is implemented. Also supports connecting through a TCPIP socket, e.g. when using a serial to TCPIP converter for the turbo controller.

@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Union, cast
 
+from .errors import PfeifferProtocolError
 from .parameters import DataLength, DataType, Parameters, parameters
 
 # pfeiffer telegram has the following format:
@@ -46,7 +47,7 @@ class Telegram:
         # check if its a command/return message (1) or a query message (0)
         if self.action == 1:
             if self.data_type == DataType.FLOAT:
-                _data = str(int(cast(str, data) * 100))
+                _data = str(int(cast(float, data) * 100))
             elif self.data_type == DataType.BOOL:
                 _data = str(int(cast(bool, data))) * self.data_length
             else:
@@ -55,11 +56,11 @@ class Telegram:
             _data = str(data)
 
         message = (
-            f"{self.address:03d}{self.action}0{self.parameter.value}"
+            f"{self.address:03d}{self.action}0{self.parameter.value:03d}"
             f"{self.data_length:02d}"
         )
         if self.data_length != 0:
-            message += _data.zfill(self.data_length - len(_data))
+            message += _data.zfill(self.data_length)
         return message
 
     def _checksum(self, telegram: str) -> int:
@@ -119,12 +120,45 @@ def decode_telegram(message: str) -> Telegram:
     Returns:
         Telegram: Telegram containing all the message information
     """
-    address = int(message[:3])
-    action = int(message[3])
-    parameter = Parameters(int(message[6:9]))
-    data_length = int(message[9:11])
-    data = message[11 : 11 + data_length]
-    checksum = int(message[11 + data_length : 11 + data_length + 3])
+    message = message.strip()
+    if len(message) < 13:
+        raise PfeifferProtocolError(
+            f"Telegram too short: expected at least 13 chars, got {len(message)}"
+        )
+
+    try:
+        address = int(message[:3])
+        action = int(message[3])
+    except ValueError as exc:
+        raise PfeifferProtocolError(
+            "Invalid address/action fields in telegram"
+        ) from exc
+
+    if action not in (0, 1):
+        raise PfeifferProtocolError(f"Invalid action field: {action}")
+
+    if message[4] != "0":
+        raise PfeifferProtocolError(f"Invalid reserved field: {message[4]!r}")
+
+    try:
+        parameter = Parameters(int(message[5:8]))
+        data_length = int(message[8:10])
+    except (ValueError, KeyError) as exc:
+        raise PfeifferProtocolError(
+            "Invalid parameter/data-length fields in telegram"
+        ) from exc
+
+    expected_len = 3 + 1 + 1 + 3 + 2 + data_length + 3
+    if len(message) != expected_len:
+        raise PfeifferProtocolError(
+            f"Telegram length mismatch: expected {expected_len}, got {len(message)}"
+        )
+
+    data = message[10 : 10 + data_length]
+    try:
+        checksum = int(message[10 + data_length : 10 + data_length + 3])
+    except ValueError as exc:
+        raise PfeifferProtocolError("Invalid checksum field in telegram") from exc
 
     data_type = parameters[parameter].data_type
 
@@ -136,7 +170,7 @@ def decode_telegram(message: str) -> Telegram:
         elif data == "0" * data_length:
             _data = False
         else:
-            raise ValueError(f"Cannot decode {data} as boolean")
+            raise PfeifferProtocolError(f"Cannot decode {data} as boolean")
     elif data_type in [DataType.INT, DataType.SHORT]:
         _data = int(data)
     else:
@@ -145,6 +179,6 @@ def decode_telegram(message: str) -> Telegram:
     telegram = Telegram(address=address, action=action, parameter=parameter, data=_data)
 
     if checksum != telegram.checksum:
-        raise ValueError("Checksum incorrect")
+        raise PfeifferProtocolError("Checksum incorrect")
 
     return telegram

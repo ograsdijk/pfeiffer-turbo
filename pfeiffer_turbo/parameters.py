@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import Optional, Union
 
 
@@ -101,16 +101,24 @@ class Parameters(Enum):
     RS485Adr = 797
 
 
+class Access(StrEnum):
+    READ = "R"
+    READ_WRITE = "RW"
+
+
 @dataclass
 class ParameterInfo:
     designation: str
     data_type: DataType
-    access: str
+    access: Access | str
     min: Optional[Union[int, float]] = None
     max: Optional[Union[int, float]] = None
     unit: Optional[str] = None
     default: Optional[Union[int, float, str]] = None
     options: Optional[dict[int, str]] = None
+
+    def __post_init__(self) -> None:
+        self.access = Access(self.access)
 
 
 parameters = {
@@ -270,7 +278,7 @@ parameters = {
     ),
     Parameters.PumpAccel: ParameterInfo("Pump accellerates", DataType.BOOL, "R", 0, 1),
     Parameters.SetRotSpd: ParameterInfo(
-        "Set rotation speed [Hz]", DataType.INT, "R", 0, 999999, "Hz"
+        "Set rotation speed [Hz]", DataType.INT, "RW", 0, 999999, "Hz"
     ),
     Parameters.ActualSpd: ParameterInfo(
         "Active rotation speed [Hz]", DataType.INT, "R", 0, 999999, "Hz"
@@ -331,7 +339,7 @@ parameters = {
         "Temperature rotor", DataType.INT, "R", unit="C"
     ),
     Parameters.SetRotSpd_rpm: ParameterInfo(
-        "Set rotation speed [rpm]", DataType.INT, "R", unit="rpm"
+        "Set rotation speed [rpm]", DataType.INT, "RW", unit="rpm"
     ),
     Parameters.ActualSpd_rpm: ParameterInfo(
         "Actual rotation speed [rpm]", DataType.INT, "R", unit="rpm"

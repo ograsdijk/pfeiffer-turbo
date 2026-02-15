@@ -1,18 +1,31 @@
-[tool.poetry]
+[project]
 name = "pfeiffer-turbo"
-version = "0.1.2"
+version = "0.2.0"
 description = ""
-authors = ["ograsdijk <o.grasdijk@gmail.com>"]
+authors = [{ name = "ograsdijk", email = "o.grasdijk@gmail.com" }]
 readme = "README.md"
-packages = [{include = "pfeiffer_turbo"}]
-license = "MIT"
-repository = "https://github.com/ograsdijk/pfeiffer-turbo"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+	"pyserial>=3.5",
+]
 
-[tool.poetry.dependencies]
-python = "^3.9"
-PyVISA = "^1.13.0"
+[project.optional-dependencies]
+dev = [
+	"pytest>=8.0",
+	"ruff>=0.5",
+	"mypy>=1.8",
+]
 
+[project.urls]
+Repository = "https://github.com/ograsdijk/pfeiffer-turbo"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["pfeiffer_turbo*"]
+
+[tool.setuptools.package-data]
+pfeiffer_turbo = ["py.typed"]

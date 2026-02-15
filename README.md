@@ -1,15 +1,22 @@
 # pfeiffer-turbo
 [![Python versions on PyPI](https://img.shields.io/pypi/pyversions/pfeiffer-turbo.svg)](https://pypi.python.org/pypi/pfeiffer-turbo/)
-[![pfeiffer-turbo version on PyPI](https://img.shields.io/pypi/v/pfeiffer-turbo.svg "pfeiffer-turbo on PyPI")](https://pypi.python.org/pypi/pfeiffer-turbo/)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)  
+[![pfeiffer-turbo version on PyPI](https://img.shields.io/pypi/v/pfeiffer-turbo.svg "pfeiffer-turbo on PyPI")](https://pypi.python.org/pypi/pfeiffer-turbo/)  
 Python interface RS485 connections for Pfeiffer HiPace turbo drive units. Currently only the TM700 is implemented. Also supports connecting through a TCPIP socket, e.g. when using a serial to TCPIP converter for the turbo controller.
+
+## Development (uv)
+
+```bash
+uv sync --extra dev
+uv run pytest
+```
 
 ## Example
 ### RS485 connection example
 ```python
-from pfeiffer_turbo import TM700
+from pfeiffer_turbo import TM700, SerialTransport
 
-pump = TM700(resource_name = "COM9", address = 1)
+pump = TM700(address=1, transport=SerialTransport(port="COM9"))
+# or: pump = TM700.from_serial("COM9", address=1)
 
 # get the rotation speed in Hz
 pump.actual_spd
@@ -22,11 +29,10 @@ pump.stop()
 ```
 ### TCPIP connection example
 ```python
-from pfeiffer_turbo import TM700
+from pfeiffer_turbo import TM700, TcpTransport
 
-pump = TM700(
-    resource_name="10.10.222.8:12345", address=1, connection_type=ConnectionType.TCPIP
-)
+pump = TM700(address=1, transport=TcpTransport(host="10.10.222.8", port=12345))
+# or: pump = TM700.from_tcp("10.10.222.8", 12345, address=1)
 
 # get the rotation speed in Hz
 pump.actual_spd
@@ -38,15 +44,33 @@ pump.start()
 pump.stop()
 ```
 
+## Writable parameters and validation
+
+Only parameters marked read-write by the parameter metadata can be assigned.
+When assigning values, the library validates:
+
+- type (bool/int/float/str as defined per parameter)
+- allowed options (`options` map when present)
+- value limits (`min`/`max` when present)
+
+Example:
+
+```python
+# writable
+pump.set_rot_spd = 600
+
+# raises ValueError (invalid option)
+# pump.gas_mode = 999
+```
+
 ## Implementation
 A baseclass `DriveUnit`:
 ```Python
 class DriveUnit:
     def __init__(
         self,
-        resource_name: str,
+        transport: BaseTransport,
         address: int,
-        connection_type: ConnectionType,
         supported_parameters: Sequence[int],
     ):
 ```

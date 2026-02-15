@@ -1,6 +1,28 @@
 from enum import Enum
 
 
+class PfeifferTurboError(Exception):
+    """Base exception for the pfeiffer_turbo package."""
+
+
+class PfeifferTransportError(PfeifferTurboError):
+    """Raised when transport I/O operations fail."""
+
+
+class PfeifferUnsupportedTransportOperationError(PfeifferTransportError):
+    """Raised when a transport does not support a requested operation."""
+
+
+class PfeifferProtocolError(PfeifferTurboError):
+    """Raised when telegram encoding/decoding fails."""
+
+
+# Backward-compatible aliases
+TransportError = PfeifferTransportError
+UnsupportedTransportOperationError = PfeifferUnsupportedTransportOperationError
+ProtocolError = PfeifferProtocolError
+
+
 class ErrorCodes(Enum):
     ERR001 = "excess rotation speed"
     ERR002 = "overvoltage"

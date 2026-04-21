@@ -27,12 +27,17 @@ class DataLength:
 class Parameters(Enum):
     Heating = 1
     Standby = 2
+    RUTimeCtrl = 4
+    ErrorAckn = 9
     PumpgStatn = 10
     EnableVent = 12
     Brake = 13
+    CfgSpdSwPt = 17
     CfgDo2 = 19
-    CfgDo1 = 24
     MotorPump = 23
+    CfgDo1 = 24
+    OpModeBKP = 25
+    SpdSetMode = 26
     GasMode = 27
     CfgRemote = 28
     VentMode = 30
@@ -47,6 +52,7 @@ class Parameters(Enum):
     CfgAo1 = 55
     CfgAi1 = 57
     CtrlViaInt = 60
+    IntSelLckd = 61
     CfgDi1 = 62
     CfgDi2 = 63
     CfgDi3 = 64
@@ -92,9 +98,13 @@ class Parameters(Enum):
     ActualSpd_rpm = 398
     NominalSpd_rpm = 399
     RuTimeSval = 700
+    SpdSwPt1 = 701
     SpdSval = 707
     PwrSval = 708
+    SwoffBKP = 710
+    SwonBKP = 711
     StbySval = 717
+    SpdSwPt2 = 719
     VentSpd = 720
     VentTime = 721
     NomSpdConf = 777
@@ -103,6 +113,7 @@ class Parameters(Enum):
 
 class Access(StrEnum):
     READ = "R"
+    WRITE = "W"
     READ_WRITE = "RW"
 
 
@@ -134,6 +145,39 @@ parameters = {
     Parameters.EnableVent: ParameterInfo("Enable venting", DataType.BOOL, "RW"),
     Parameters.Brake: ParameterInfo("Brake", DataType.BOOL, "RW"),
     Parameters.MotorPump: ParameterInfo("Motor pump", DataType.BOOL, "RW"),
+    Parameters.RUTimeCtrl: ParameterInfo(
+        "Run-up time control",
+        data_type=DataType.BOOL,
+        access="RW",
+    ),
+    Parameters.ErrorAckn: ParameterInfo(
+        "Error acknowledgement",
+        data_type=DataType.BOOL,
+        access="W",
+    ),
+    Parameters.CfgSpdSwPt: ParameterInfo(
+        "Configuration rotation speed switch point",
+        data_type=DataType.SHORT,
+        access="RW",
+        options={0: "Rotation speed switch point 1", 1: "Rotation speed switch point 1&2"},
+    ),
+    Parameters.OpModeBKP: ParameterInfo(
+        "Operation mode backing pump",
+        data_type=DataType.SHORT,
+        access="RW",
+        options={0: "continuous operating", 1: "intermittent mode", 2: "delayed switch-on"},
+    ),
+    Parameters.SpdSetMode: ParameterInfo(
+        "Rotation speed setting mode",
+        data_type=DataType.SHORT,
+        access="RW",
+        options={0: "off", 1: "on"},
+    ),
+    Parameters.IntSelLckd: ParameterInfo(
+        "Interface selection locked",
+        data_type=DataType.BOOL,
+        access="RW",
+    ),
     Parameters.GasMode: ParameterInfo(
         "Gas mode",
         DataType.SHORT,
@@ -353,6 +397,12 @@ parameters = {
         "RW",
         unit="min",
     ),
+    Parameters.SpdSwPt1: ParameterInfo(
+        "Rotation speed switch point 1 [%]",
+        DataType.INT,
+        "RW",
+        unit="%",
+    ),
     Parameters.SpdSval: ParameterInfo(
         "Set value in rot. speed setting mode [%]",
         DataType.INT,
@@ -365,9 +415,27 @@ parameters = {
         "RW",
         unit="%",
     ),
+    Parameters.SwoffBKP: ParameterInfo(
+        "Switch off threshold backing pump [W]",
+        DataType.INT,
+        "RW",
+        unit="W",
+    ),
+    Parameters.SwonBKP: ParameterInfo(
+        "Switch on threshold backing pump [W]",
+        DataType.INT,
+        "RW",
+        unit="W",
+    ),
     Parameters.StbySval: ParameterInfo(
         "Set value roation speed at standby [%]",
         DataType.FLOAT,
+        "RW",
+        unit="%",
+    ),
+    Parameters.SpdSwPt2: ParameterInfo(
+        "Rotation speed switch point 2 [%]",
+        DataType.INT,
         "RW",
         unit="%",
     ),

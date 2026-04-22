@@ -1,6 +1,8 @@
 from typing import Optional
 
-from pfeiffer_turbo import TM700
+import pytest
+
+from pfeiffer_turbo import TC110, TM700
 from pfeiffer_turbo.errors import PfeifferProtocolError
 from pfeiffer_turbo.parameters import Parameters
 from pfeiffer_turbo.telegram import create_telegram
@@ -140,3 +142,24 @@ def test_set_rot_spd_is_writable() -> None:
 
     written = transport._writes[0].decode("ascii").strip()
     assert written[5:8] == "308"
+
+
+def test_tc110_write_only_parameter_can_be_set_and_not_read() -> None:
+    response = (
+        create_telegram(
+            parameter=Parameters.ErrorAckn,
+            address=1,
+            read_write="W",
+            data=True,
+        ).message
+        + "\r"
+    ).encode("ascii")
+
+    pump = TC110(address=1, transport=FakeTransport([response]))
+
+    pump.error_ackn = True
+
+    written = pump.transport._writes[0].decode("ascii").strip()
+    assert written[5:8] == "009"
+    with pytest.raises(AttributeError, match="write-only"):
+        _ = pump.error_ackn

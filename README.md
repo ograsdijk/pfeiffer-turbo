@@ -1,22 +1,21 @@
 # pfeiffer-turbo
 [![Python versions on PyPI](https://img.shields.io/pypi/pyversions/pfeiffer-turbo.svg)](https://pypi.python.org/pypi/pfeiffer-turbo/)
 [![pfeiffer-turbo version on PyPI](https://img.shields.io/pypi/v/pfeiffer-turbo.svg "pfeiffer-turbo on PyPI")](https://pypi.python.org/pypi/pfeiffer-turbo/)  
-Python interface RS485 connections for Pfeiffer HiPace turbo drive units. Currently only the TM700 is implemented. Also supports connecting through a TCPIP socket, e.g. when using a serial to TCPIP converter for the turbo controller.
+Python interface for RS485 connections to Pfeiffer HiPace turbo drive units. Supports the TM700 and TC110 electronic drive units, and can also communicate through a TCP/IP socket, for example when using a serial-to-TCP/IP converter for the turbo controller.
 
-## Development (uv)
+## Supported drive units
 
-```bash
-uv sync --extra dev
-uv run pytest
-```
+- TM700
+- TC110
 
-## Example
+## Examples
+
 ### RS485 connection example
 ```python
-from pfeiffer_turbo import TM700, SerialTransport
+from pfeiffer_turbo import TC110, SerialTransport
 
-pump = TM700(address=1, transport=SerialTransport(port="COM9"))
-# or: pump = TM700.from_serial("COM9", address=1)
+pump = TC110(address=1, transport=SerialTransport(port="COM9"))
+# or: pump = TC110.from_serial("COM9", address=1)
 
 # get the rotation speed in Hz
 pump.actual_spd
@@ -27,7 +26,8 @@ pump.start()
 # stop the pump
 pump.stop()
 ```
-### TCPIP connection example
+
+### TCP/IP connection example
 ```python
 from pfeiffer_turbo import TM700, TcpTransport
 
@@ -46,21 +46,27 @@ pump.stop()
 
 ## Writable parameters and validation
 
-Only parameters marked read-write by the parameter metadata can be assigned.
+Parameters marked read-write or write-only by the parameter metadata can be assigned.
 When assigning values, the library validates:
 
 - type (bool/int/float/str as defined per parameter)
 - allowed options (`options` map when present)
 - value limits (`min`/`max` when present)
 
+Write-only parameters raise `AttributeError` when read.
+
 Example:
 
 ```python
 # writable
 pump.set_rot_spd = 600
+pump.error_ackn = True
 
 # raises ValueError (invalid option)
 # pump.gas_mode = 999
+
+# raises AttributeError (write-only parameter)
+# pump.error_ackn
 ```
 
 ## Implementation
@@ -74,17 +80,21 @@ class DriveUnit:
         supported_parameters: Sequence[int],
     ):
 ```
-takes in a set of integers that correspond to pfeiffer vacuum parameters supported by the particular drive unit. Implemented vacuum parameters are seen in `parameters.py`. The getters and setters are then dynamically generated based on the `supported_parameters` and info in `parameters.py`; the enum `Parameters` contains all implemented pfeiffer vacuum parameters, and the dictionary `parameters` contains key, value pairs of `Parameters` and `ParameterInfo`, where `ParameterInfo` is a dataclass containing the implemenation information for a particular parameter:
+takes a set of integers that correspond to Pfeiffer vacuum parameters supported by a particular drive unit. Implemented vacuum parameters are defined in `parameters.py`. Getters and setters are then generated dynamically from `supported_parameters` and the metadata in `parameters.py`.
+
+The enum `Parameters` contains all implemented Pfeiffer vacuum parameters, and the dictionary `parameters` maps `Parameters` values to `ParameterInfo` objects, where `ParameterInfo` is a dataclass containing the implementation details for a particular parameter:
+
 ```Python
 @dataclass
-class Parameter:
+class ParameterInfo:
     designation: str
     data_type: DataType
-    access: StopIteration
-    min: Optional[int] = None
-    max: Optional[int] = None
+    access: Access | str
+    min: Optional[Union[int, float]] = None
+    max: Optional[Union[int, float]] = None
     unit: Optional[str] = None
     default: Optional[Union[int, float, str]] = None
     options: Optional[dict[int, str]] = None
 ```
-Implementing new drive units is be done by inheriting from `DriveUnit` and specifying which pfeiffer parameters are supported by the specific model. New parameters can be implemented by extending the `Parameters` enum and `parameters` dictionary. The class attributes are named similarly to the Pfeiffer vacuum parameters, with underscores inserted between uppercase - lowercase transitions and all lowercase letters. E.g. `GasMode` -> `gas_mode`.
+
+New drive units can be implemented by inheriting from `DriveUnit` and specifying which Pfeiffer parameters are supported by the model. New parameters can be implemented by extending the `Parameters` enum and the `parameters` dictionary. Generated class attributes are named similarly to the Pfeiffer parameter names, with underscores inserted between uppercase-to-lowercase transitions and all letters lowercased, for example `GasMode` becomes `gas_mode`.

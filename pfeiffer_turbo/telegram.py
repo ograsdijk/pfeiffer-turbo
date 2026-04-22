@@ -162,6 +162,7 @@ def decode_telegram(message: str) -> Telegram:
 
     data_type = parameters[parameter].data_type
 
+    _data: Union[bool, str, int, float]
     if data_type == DataType.FLOAT:
         _data = float(data) / 100
     elif data_type == DataType.BOOL:

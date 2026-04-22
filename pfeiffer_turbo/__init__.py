@@ -1,4 +1,4 @@
-from .device import TM700
+from .device import TC110, TM700
 from .errors import (
     PfeifferProtocolError,
     PfeifferTransportError,
@@ -13,6 +13,7 @@ from .transport import BaseTransport, SerialTransport, TcpTransport
 
 __all__ = [
     "TM700",
+    "TC110",
     "Access",
     "BaseTransport",
     "SerialTransport",

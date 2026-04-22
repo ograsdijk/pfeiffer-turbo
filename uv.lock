@@ -161,7 +161,7 @@ wheels = [
 
 [[package]]
 name = "pfeiffer-turbo"
-version = "0.2.0"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "pyserial" },
@@ -172,6 +172,7 @@ dev = [
     { name = "mypy" },
     { name = "pytest" },
     { name = "ruff" },
+    { name = "types-pyserial" },
 ]
 
 [package.metadata]
@@ -180,6 +181,7 @@ requires-dist = [
     { name = "pyserial", specifier = ">=3.5" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.5" },
+    { name = "types-pyserial", marker = "extra == 'dev'", specifier = ">=3.5.0" },
 ]
 provides-extras = ["dev"]
 
@@ -249,6 +251,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/f6/58/ac864a75067dcbd3b95be5ab4eb2b601d7fbc3d3d736a27e391a4f92a5c1/ruff-0.15.1-py3-none-win32.whl", hash = "sha256:660975d9cb49b5d5278b12b03bb9951d554543a90b74ed5d366b20e2c57c2098", size = 10462555, upload-time = "2026-02-12T23:09:29.899Z" },
     { url = "https://files.pythonhosted.org/packages/e0/5e/d4ccc8a27ecdb78116feac4935dfc39d1304536f4296168f91ed3ec00cd2/ruff-0.15.1-py3-none-win_amd64.whl", hash = "sha256:c820fef9dd5d4172a6570e5721704a96c6679b80cf7be41659ed439653f62336", size = 11599956, upload-time = "2026-02-12T23:09:01.157Z" },
     { url = "https://files.pythonhosted.org/packages/2a/07/5bda6a85b220c64c65686bc85bd0bbb23b29c62b3a9f9433fa55f17cda93/ruff-0.15.1-py3-none-win_arm64.whl", hash = "sha256:5ff7d5f0f88567850f45081fac8f4ec212be8d0b963e385c3f7d0d2eb4899416", size = 10874604, upload-time = "2026-02-12T23:09:05.515Z" },
+]
+
+[[package]]
+name = "types-pyserial"
+version = "3.5.0.20260408"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/23/c7/75035cf4511e7e76e37eb54c7b960d184fbcad6f6b7118f9b4694167aba7/types_pyserial-3.5.0.20260408.tar.gz", hash = "sha256:8a8eb2bfcdc942a081ebf1e4c6d852683127b37c9cd2e8e17f00e2308e8e08cc", size = 20003, upload-time = "2026-04-08T04:31:43.047Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/20/e1/2336f416d9b7c00fc21a098df7838eec0199d4e4175402e553c2a867d637/types_pyserial-3.5.0.20260408-py3-none-any.whl", hash = "sha256:3c9d611de989de94748290c7de5b22f1dad295a9b96d6c371cc482c6a8485345", size = 25328, upload-time = "2026-04-08T04:31:42.175Z" },
 ]
 
 [[package]]

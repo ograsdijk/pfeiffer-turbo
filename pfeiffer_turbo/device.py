@@ -10,6 +10,30 @@ from .telegram import Telegram, create_telegram, decode_telegram
 from .transport import BaseTransport, SerialTransport, TcpTransport
 
 
+def _python_type_for_data_type(
+    data_type: DataType,
+) -> type[bool] | type[int] | type[float] | type[str] | None:
+    if data_type == DataType.BOOL:
+        return bool
+    if data_type in (DataType.INT, DataType.SHORT):
+        return int
+    if data_type == DataType.FLOAT:
+        return float
+    if data_type in (DataType.STR, DataType.LONGSTR):
+        return str
+    return None
+
+
+def _annotate_getter_return(function_property, value_type: type[object] | None) -> None:
+    if value_type is not None:
+        function_property.__annotations__["return"] = value_type
+
+
+def _annotate_setter_value(function_setter, value_type: type[object] | None) -> None:
+    if value_type is not None:
+        function_setter.__annotations__["value"] = value_type
+
+
 def _make_property(parameter: Parameters):
     def function_property(cls: DriveUnit):
         telegram = create_telegram(
@@ -140,12 +164,14 @@ class DriveUnit:
 
             parameter = Parameters(parameter_id)
             parameter_desc = parameters[parameter]
+            value_type = _python_type_for_data_type(parameter_desc.data_type)
             name = "_".join(
                 [s for s in re.split("([A-Z][^A-Z]*)", parameter.name) if s]
             ).lower()
 
             if parameter_desc.access == Access.READ:
                 function_property = _make_property(parameter)
+                _annotate_getter_return(function_property, value_type)
                 setattr(
                     cls,
                     name,
@@ -158,6 +184,8 @@ class DriveUnit:
             elif parameter_desc.access == Access.READ_WRITE:
                 function_property = _make_property(parameter)
                 function_setter = _make_setter(parameter)
+                _annotate_getter_return(function_property, value_type)
+                _annotate_setter_value(function_setter, value_type)
 
                 doc = parameter_desc.designation
                 if parameter_desc.options is not None:
@@ -179,6 +207,7 @@ class DriveUnit:
                 # write-only parameter: provide setter, getter raises AttributeError
                 function_setter = _make_setter(parameter)
                 function_getter = _make_write_only_getter(parameter)
+                _annotate_setter_value(function_setter, value_type)
 
                 doc = parameter_desc.designation
                 if parameter_desc.options is not None:

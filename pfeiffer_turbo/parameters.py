@@ -159,13 +159,20 @@ parameters = {
         "Configuration rotation speed switch point",
         data_type=DataType.SHORT,
         access="RW",
-        options={0: "Rotation speed switch point 1", 1: "Rotation speed switch point 1&2"},
+        options={
+            0: "Rotation speed switch point 1",
+            1: "Rotation speed switch point 1&2",
+        },
     ),
     Parameters.OpModeBKP: ParameterInfo(
         "Operation mode backing pump",
         data_type=DataType.SHORT,
         access="RW",
-        options={0: "continuous operating", 1: "intermittent mode", 2: "delayed switch-on"},
+        options={
+            0: "continuous operating",
+            1: "intermittent mode",
+            2: "delayed switch-on",
+        },
     ),
     Parameters.SpdSetMode: ParameterInfo(
         "Rotation speed setting mode",

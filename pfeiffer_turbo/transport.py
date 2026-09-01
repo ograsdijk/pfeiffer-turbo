@@ -191,21 +191,30 @@ class TcpTransport(BaseTransport):
         if self._sock is not None:
             return
         try:
-            self._sock = socket.create_connection(
-                (self.host, self.port), self.timeout_s
-            )
-            self._sock.settimeout(self.timeout_s)
+            sock = socket.create_connection((self.host, self.port), self.timeout_s)
+            sock.settimeout(self.timeout_s)
+            self._sock = sock
         except OSError as exc:
             raise PfeifferTransportError(
                 f"Failed opening TCP connection {self.host}:{self.port}: {exc}"
             ) from exc
 
+    def _invalidate_socket(self) -> None:
+        """Detach and best-effort close a socket that is no longer trustworthy."""
+        sock, self._sock = self._sock, None
+        if sock is None:
+            return
+        try:
+            sock.shutdown(socket.SHUT_RDWR)
+        except OSError:
+            pass
+        try:
+            sock.close()
+        except OSError:
+            pass
+
     def close(self) -> None:
-        if self._sock is not None:
-            try:
-                self._sock.close()
-            finally:
-                self._sock = None
+        self._invalidate_socket()
 
     @property
     def is_open(self) -> bool:
@@ -221,6 +230,7 @@ class TcpTransport(BaseTransport):
         try:
             sock.sendall(data)
         except OSError as exc:
+            self._invalidate_socket()
             raise PfeifferTransportError(f"TCP write failed: {exc}") from exc
 
     def read_until(self, terminator: bytes, timeout_s: float | None = None) -> bytes:
@@ -242,16 +252,21 @@ class TcpTransport(BaseTransport):
                     break
 
                 if not chunk:
-                    break
+                    self._invalidate_socket()
+                    raise PfeifferTransportError(
+                        "TCP connection closed while reading response."
+                    )
 
                 chunks.extend(chunk)
                 if chunks.endswith(terminator):
                     break
             return bytes(chunks)
         except OSError as exc:
+            self._invalidate_socket()
             raise PfeifferTransportError(f"TCP read failed: {exc}") from exc
         finally:
-            sock.settimeout(old_timeout)
+            if self._sock is sock:
+                sock.settimeout(old_timeout)
 
     def flush_input(self) -> None:
         sock = self._require_open()
@@ -261,12 +276,20 @@ class TcpTransport(BaseTransport):
             while True:
                 try:
                     if not sock.recv(4096):
-                        break
+                        self._invalidate_socket()
+                        raise PfeifferTransportError(
+                            "TCP connection closed while flushing input."
+                        )
                 except BlockingIOError:
                     break
+                except socket.timeout:
+                    break
+        except OSError as exc:
+            self._invalidate_socket()
+            raise PfeifferTransportError(f"TCP input flush failed: {exc}") from exc
         finally:
-            sock.setblocking(True)
-            sock.settimeout(old_timeout)
+            if self._sock is sock:
+                sock.settimeout(old_timeout)
 
     def flush_output(self) -> None:
         # No output buffer control for plain TCP sockets.

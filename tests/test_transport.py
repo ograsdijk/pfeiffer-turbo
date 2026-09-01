@@ -2,6 +2,7 @@ import socket
 
 import pytest
 
+import pfeiffer_turbo.transport as transport_module
 from pfeiffer_turbo.errors import PfeifferTransportError
 from pfeiffer_turbo.transport import TcpTransport
 
@@ -72,6 +73,18 @@ def test_fatal_write_invalidates_without_retry():
     assert sock.closed is True
 
 
+def test_write_timeout_invalidates_without_retry():
+    sock = FakeSocket(send_error=TimeoutError("timed out"))
+    transport = opened_transport(sock)
+
+    with pytest.raises(PfeifferTransportError):
+        transport.write(b"command")
+
+    assert sock.send_calls == 1
+    assert transport.is_open is False
+    assert sock.closed is True
+
+
 def test_open_after_failure_uses_fresh_socket(monkeypatch):
     failed = FakeSocket([b""])
     fresh = FakeSocket()
@@ -112,3 +125,24 @@ def test_flush_eof_invalidates_socket():
 
     assert transport.is_open is False
     assert sock.closed is True
+
+
+def test_flush_stops_at_byte_limit_under_continuous_input(monkeypatch):
+    class ContinuousSocket(FakeSocket):
+        def __init__(self):
+            super().__init__(timeout=0.25)
+            self.recv_calls = 0
+
+        def recv(self, size):
+            self.recv_calls += 1
+            return b"x" * size
+
+    monkeypatch.setattr(transport_module.time, "monotonic", lambda: 0.0)
+    sock = ContinuousSocket()
+    transport = opened_transport(sock)
+
+    transport.flush_input()
+
+    assert sock.recv_calls == TcpTransport._FLUSH_MAX_BYTES // 4096
+    assert sock.timeout == 0.25
+    assert transport.is_open is True

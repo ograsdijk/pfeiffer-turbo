@@ -171,6 +171,9 @@ class SerialTransport(BaseTransport):
 class TcpTransport(BaseTransport):
     """TCP socket transport for serial-over-IP devices."""
 
+    _FLUSH_MAX_BYTES = 64 * 1024
+    _FLUSH_MAX_DURATION_S = 0.05
+
     def __init__(self, host: str, port: int, timeout_s: float = 0.25) -> None:
         self.host = host
         self.port = port
@@ -271,15 +274,22 @@ class TcpTransport(BaseTransport):
     def flush_input(self) -> None:
         sock = self._require_open()
         old_timeout = sock.gettimeout()
+        deadline = time.monotonic() + self._FLUSH_MAX_DURATION_S
+        drained = 0
         try:
             sock.setblocking(False)
-            while True:
+            while (
+                drained < self._FLUSH_MAX_BYTES
+                and time.monotonic() < deadline
+            ):
                 try:
-                    if not sock.recv(4096):
+                    chunk = sock.recv(min(4096, self._FLUSH_MAX_BYTES - drained))
+                    if not chunk:
                         self._invalidate_socket()
                         raise PfeifferTransportError(
                             "TCP connection closed while flushing input."
                         )
+                    drained += len(chunk)
                 except BlockingIOError:
                     break
                 except socket.timeout:

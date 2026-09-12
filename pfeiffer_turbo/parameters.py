@@ -355,6 +355,8 @@ parameters = {
     Parameters.TempElec: ParameterInfo(
         "Temperature electronic [C]", DataType.INT, "R", unit="C"
     ),
+    # The TM700 manual lists parameter 329 as an integer, but the hardware
+    # returns percent scaled by 100 (for example, 007575 means 75.75%).
     Parameters.BearngWear: ParameterInfo(
         "Wear conditions safety bearing [%]", DataType.FLOAT, "R", unit="%"
     ),

@@ -1,4 +1,4 @@
-from typing import Optional, get_type_hints
+from typing import get_type_hints
 
 import pytest
 
@@ -28,7 +28,7 @@ class FakeTransport(BaseTransport):
     def write(self, data: bytes) -> None:
         self._writes.append(data)
 
-    def read_until(self, terminator: bytes, timeout_s: Optional[float] = None) -> bytes:
+    def read_until(self, terminator: bytes, timeout_s: float | None = None) -> bytes:
         _ = terminator
         _ = timeout_s
         return self._responses.pop(0)
@@ -54,7 +54,7 @@ def test_tm700_getter_uses_transport() -> None:
     transport = FakeTransport([response])
     pump = TM700(address=1, transport=transport)
 
-    assert getattr(pump, "actual_spd") == 321
+    assert pump.actual_spd == 321
     assert transport._writes[0].endswith(b"\r")
 
 
@@ -103,7 +103,7 @@ def test_query_on_closed_transport_raises() -> None:
     pump.close()
 
     try:
-        _ = getattr(pump, "actual_spd")
+        _ = pump.actual_spd
     except PfeifferProtocolError:
         return
 
@@ -117,7 +117,7 @@ def test_setter_rejects_invalid_option_value() -> None:
     pump = TM700(address=1, transport=transport)
 
     try:
-        setattr(pump, "gas_mode", 999)
+        pump.gas_mode = 999
     except ValueError:
         return
 
@@ -138,7 +138,7 @@ def test_set_rot_spd_is_writable() -> None:
     transport = FakeTransport([response])
     pump = TM700(address=1, transport=transport)
 
-    setattr(pump, "set_rot_spd", 600)
+    pump.set_rot_spd = 600
 
     written = transport._writes[0].decode("ascii").strip()
     assert written[5:8] == "308"

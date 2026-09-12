@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import socket
 import time
-from typing import Literal, Optional
+from typing import Literal
 
 import serial
 
@@ -35,7 +35,7 @@ class BaseTransport:
     def write(self, data: bytes) -> None:
         raise NotImplementedError
 
-    def read_until(self, terminator: bytes, timeout_s: Optional[float] = None) -> bytes:
+    def read_until(self, terminator: bytes, timeout_s: float | None = None) -> bytes:
         raise NotImplementedError
 
     def flush_input(self) -> None:
@@ -76,7 +76,7 @@ class SerialTransport(BaseTransport):
         self.bytesize = bytesize
         self.parity = parity
         self.stopbits = stopbits
-        self._ser: Optional[serial.Serial] = None
+        self._ser: serial.Serial | None = None
 
     @property
     def timeout_s(self) -> float:
@@ -130,7 +130,7 @@ class SerialTransport(BaseTransport):
         except serial.SerialException as exc:
             raise PfeifferTransportError(f"Serial write failed: {exc}") from exc
 
-    def read_until(self, terminator: bytes, timeout_s: Optional[float] = None) -> bytes:
+    def read_until(self, terminator: bytes, timeout_s: float | None = None) -> bytes:
         ser = self._require_open()
         old_timeout = ser.timeout
         try:
@@ -175,7 +175,7 @@ class TcpTransport(BaseTransport):
         self.host = host
         self.port = port
         self._timeout_s = timeout_s
-        self._sock: Optional[socket.socket] = None
+        self._sock: socket.socket | None = None
 
     @property
     def timeout_s(self) -> float:
@@ -223,7 +223,7 @@ class TcpTransport(BaseTransport):
         except OSError as exc:
             raise PfeifferTransportError(f"TCP write failed: {exc}") from exc
 
-    def read_until(self, terminator: bytes, timeout_s: Optional[float] = None) -> bytes:
+    def read_until(self, terminator: bytes, timeout_s: float | None = None) -> bytes:
         sock = self._require_open()
         old_timeout = sock.gettimeout()
         if timeout_s is not None:
@@ -238,7 +238,7 @@ class TcpTransport(BaseTransport):
                     break
                 try:
                     chunk = sock.recv(1)
-                except socket.timeout:
+                except TimeoutError:
                     break
 
                 if not chunk:

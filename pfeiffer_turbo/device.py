@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from types import TracebackType
-from typing import Sequence, Union
+from typing import Self
 
 from .errors import PfeifferProtocolError
 from .parameters import Access, DataType, Parameters, parameters
@@ -12,7 +13,7 @@ from .transport import BaseTransport, SerialTransport, TcpTransport
 
 def _python_type_for_data_type(
     data_type: DataType,
-) -> type[bool] | type[int] | type[float] | type[str] | None:
+) -> type[bool | int | float | str] | None:
     if data_type == DataType.BOOL:
         return bool
     if data_type in (DataType.INT, DataType.SHORT):
@@ -48,7 +49,7 @@ def _make_property(parameter: Parameters):
 
 
 def _make_setter(parameter: Parameters):
-    def function_setter(cls: DriveUnit, value: Union[str, int, float]) -> None:
+    def function_setter(cls: DriveUnit, value: str | float) -> None:
         validated_value = _validate_write_value(parameter, value)
         telegram = create_telegram(
             parameter=parameter,
@@ -70,14 +71,14 @@ def _make_write_only_getter(parameter: Parameters):
 
 def _validate_write_value(
     parameter: Parameters,
-    value: Union[str, int, float],
-) -> Union[str, int, float]:
+    value: str | float,
+) -> str | int | float:
     info = parameters[parameter]
 
     if info.access not in (Access.READ_WRITE, Access.WRITE):
         raise ValueError(f"Parameter {parameter.name} is not writable")
 
-    normalized: Union[str, int, float]
+    normalized: str | int | float
     if info.data_type == DataType.BOOL:
         if not isinstance(value, bool):
             raise TypeError(f"Parameter {parameter.name} expects bool")
@@ -107,17 +108,23 @@ def _validate_write_value(
                 f"Parameter {parameter.name} value must be one of {tuple(info.options.keys())}"
             )
 
-    if info.min is not None and isinstance(normalized, (int, float)):
-        if normalized < info.min:
-            raise ValueError(
-                f"Parameter {parameter.name} value {normalized} < min {info.min}"
-            )
+    if (
+        info.min is not None
+        and isinstance(normalized, (int, float))
+        and normalized < info.min
+    ):
+        raise ValueError(
+            f"Parameter {parameter.name} value {normalized} < min {info.min}"
+        )
 
-    if info.max is not None and isinstance(normalized, (int, float)):
-        if normalized > info.max:
-            raise ValueError(
-                f"Parameter {parameter.name} value {normalized} > max {info.max}"
-            )
+    if (
+        info.max is not None
+        and isinstance(normalized, (int, float))
+        and normalized > info.max
+    ):
+        raise ValueError(
+            f"Parameter {parameter.name} value {normalized} > max {info.max}"
+        )
 
     return normalized
 
@@ -130,6 +137,8 @@ class DriveUnit:
     supported_parameters, a sequence of integers which are then cross referenced against
     implemented parameters shown in Parameters from parameters.py
     """
+
+    _generated_parameter_ids: set[int]
 
     def __init__(
         self,
@@ -227,7 +236,7 @@ class DriveUnit:
 
             generated_ids.add(parameter_id)
 
-        setattr(cls, "_generated_parameter_ids", generated_ids)
+        cls._generated_parameter_ids = generated_ids
 
     def open(self) -> None:
         if not self.transport.is_open:
@@ -236,7 +245,7 @@ class DriveUnit:
     def close(self) -> None:
         self.transport.close()
 
-    def __enter__(self) -> DriveUnit:
+    def __enter__(self) -> Self:
         self.open()
         return self
 
@@ -380,7 +389,7 @@ class TM700(DriveUnit):
         address: int = 1,
         baudrate: int = 9600,
         timeout_s: float = 0.25,
-    ) -> "TM700":
+    ) -> TM700:
         return cls(
             transport=SerialTransport(
                 port=port,
@@ -398,7 +407,7 @@ class TM700(DriveUnit):
         *,
         address: int = 1,
         timeout_s: float = 0.25,
-    ) -> "TM700":
+    ) -> TM700:
         return cls(
             transport=TcpTransport(host=host, port=port, timeout_s=timeout_s),
             address=address,
@@ -513,7 +522,7 @@ class TC110(DriveUnit):
         address: int = 1,
         baudrate: int = 9600,
         timeout_s: float = 0.25,
-    ) -> "TC110":
+    ) -> TC110:
         return cls(
             transport=SerialTransport(
                 port=port,

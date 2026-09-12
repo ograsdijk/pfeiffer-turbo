@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
-from typing import Union, cast
+from decimal import Decimal, DecimalException
+from typing import cast
 
 from .errors import PfeifferProtocolError
 from .parameters import DataLength, DataType, Parameters, parameters
@@ -19,7 +20,7 @@ class Telegram:
     address: int
     action: int
     parameter: Parameters
-    data: Union[bool, str, int, float]
+    data: bool | str | int | float
     data_type: DataType = field(init=False)
     message: str = field(init=False)
     data_length: int = field(init=False)
@@ -47,7 +48,20 @@ class Telegram:
         # check if its a command/return message (1) or a query message (0)
         if self.action == 1:
             if self.data_type == DataType.FLOAT:
-                _data = str(int(cast(float, data) * 100))
+                try:
+                    scaled = Decimal(str(data)) * 100
+                except DecimalException as exc:
+                    raise ValueError(
+                        f"FLOAT value {data!r} cannot be represented exactly "
+                        "at 0.01 resolution"
+                    ) from exc
+
+                if not scaled.is_finite() or scaled != scaled.to_integral_value():
+                    raise ValueError(
+                        f"FLOAT value {data!r} cannot be represented exactly "
+                        "at 0.01 resolution"
+                    )
+                _data = str(int(scaled))
             elif self.data_type == DataType.BOOL:
                 _data = str(int(cast(bool, data))) * self.data_length
             else:
@@ -72,7 +86,7 @@ def create_telegram(
     parameter: Parameters,
     address: int,
     read_write: str = "R",
-    data: Union[bool, str, int, float] = "=?",
+    data: bool | str | float = "=?",
 ) -> Telegram:
     """
     Construct a Telegram to send to a Pfeiffer turbo drive unit
@@ -141,11 +155,10 @@ def decode_telegram(message: str) -> Telegram:
         raise PfeifferProtocolError(f"Invalid reserved field: {message[4]!r}")
 
     try:
-        parameter = Parameters(int(message[5:8]))
         data_length = int(message[8:10])
-    except (ValueError, KeyError) as exc:
+    except ValueError as exc:
         raise PfeifferProtocolError(
-            "Invalid parameter/data-length fields in telegram"
+            "Invalid data-length field in telegram"
         ) from exc
 
     expected_len = 3 + 1 + 1 + 3 + 2 + data_length + 3
@@ -154,15 +167,24 @@ def decode_telegram(message: str) -> Telegram:
             f"Telegram length mismatch: expected {expected_len}, got {len(message)}"
         )
 
-    data = message[10 : 10 + data_length]
     try:
-        checksum = int(message[10 + data_length : 10 + data_length + 3])
+        checksum = int(message[-3:])
     except ValueError as exc:
         raise PfeifferProtocolError("Invalid checksum field in telegram") from exc
 
+    payload = message[:-3]
+    if checksum != sum(ord(char) for char in payload) % 256:
+        raise PfeifferProtocolError("Checksum incorrect")
+
+    try:
+        parameter = Parameters(int(message[5:8]))
+    except ValueError as exc:
+        raise PfeifferProtocolError("Invalid parameter field in telegram") from exc
+
+    data = message[10:-3]
     data_type = parameters[parameter].data_type
 
-    _data: Union[bool, str, int, float]
+    _data: bool | str | int | float
     if data_type == DataType.FLOAT:
         _data = float(data) / 100
     elif data_type == DataType.BOOL:
@@ -178,8 +200,4 @@ def decode_telegram(message: str) -> Telegram:
         _data = data
 
     telegram = Telegram(address=address, action=action, parameter=parameter, data=_data)
-
-    if checksum != telegram.checksum:
-        raise PfeifferProtocolError("Checksum incorrect")
-
     return telegram

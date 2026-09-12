@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from enum import Enum, StrEnum
-from typing import Optional, Union
 
 
 class DataType(Enum):
@@ -122,11 +121,11 @@ class ParameterInfo:
     designation: str
     data_type: DataType
     access: Access | str
-    min: Optional[Union[int, float]] = None
-    max: Optional[Union[int, float]] = None
-    unit: Optional[str] = None
-    default: Optional[Union[int, float, str]] = None
-    options: Optional[dict[int, str]] = None
+    min: int | float | None = None
+    max: int | float | None = None
+    unit: str | None = None
+    default: int | float | str | None = None
+    options: dict[int, str] | None = None
 
     def __post_init__(self) -> None:
         self.access = Access(self.access)

@@ -37,7 +37,7 @@ class ErrorCodes(Enum):
     ERR073 = "overload axial bearing"
     ERR074 = "overload radial bearing"
     ERR089 = "rotor out of target aread, stabilization impossible"
-    ERR091 = "internal device fault"
+    ERR091 = "internal device fault"  # noqa: PIE796 - distinct documented error code
     ERR092 = "unknown connection panel"
     ERR093 = "temperature analysis motor faulty"
     ERR094 = "temperature analysis electronic faulty"

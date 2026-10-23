@@ -1,6 +1,6 @@
 [project]
 name = "pfeiffer-turbo"
-version = "0.3.3"
+version = "0.3.4"
 description = ""
 authors = [{ name = "ograsdijk", email = "o.grasdijk@gmail.com" }]
 readme = "README.md"

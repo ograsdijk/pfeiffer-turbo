@@ -292,7 +292,7 @@ class TcpTransport(BaseTransport):
                     drained += len(chunk)
                 except BlockingIOError:
                     break
-                except socket.timeout:
+                except TimeoutError:
                     break
         except OSError as exc:
             self._invalidate_socket()

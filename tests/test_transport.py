@@ -108,7 +108,7 @@ def test_open_after_failure_uses_fresh_socket(monkeypatch):
 
 
 def test_bounded_timeout_returns_partial_data_and_keeps_socket_open():
-    sock = FakeSocket([b"a", socket.timeout("timed out")], timeout=0.25)
+    sock = FakeSocket([b"a", TimeoutError("timed out")], timeout=0.25)
     transport = opened_transport(sock)
 
     assert transport.read_until(b"\r", timeout_s=0.1) == b"a"

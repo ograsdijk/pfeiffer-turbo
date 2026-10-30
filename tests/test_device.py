@@ -28,10 +28,15 @@ class FakeTransport(BaseTransport):
     def write(self, data: bytes) -> None:
         self._writes.append(data)
 
+    @property
+    def timeout_s(self) -> float:
+        return 0.05
+
     def read_until(self, terminator: bytes, timeout_s: float | None = None) -> bytes:
         _ = terminator
         _ = timeout_s
-        return self._responses.pop(0)
+        # An exhausted script behaves like a read that timed out.
+        return self._responses.pop(0) if self._responses else b""
 
     def flush_input(self) -> None:
         return
@@ -255,3 +260,86 @@ def test_generated_float_property_still_accepts_int_and_float_values() -> None:
     pump.stby_sval = 1.5
 
     assert len(transport._writes) == 2
+
+
+def _reply(parameter: Parameters, data: bool | str | float, address: int = 1) -> bytes:
+    return (
+        create_telegram(
+            parameter=parameter, address=address, read_write="W", data=data
+        ).message
+        + "\r"
+    ).encode("ascii")
+
+
+def _raw_reply(payload: str) -> bytes:
+    checksum = sum(ord(char) for char in payload) % 256
+    return f"{payload}{checksum:03d}\r".encode("ascii")
+
+
+def test_query_discards_late_reply_to_an_earlier_parameter() -> None:
+    # A reply to an earlier, timed-out query arrives before the real one.
+    transport = FakeTransport(
+        [_reply(Parameters.TempMotor, 45), _reply(Parameters.ActualSpd, 820)]
+    )
+    pump = TM700(address=1, transport=transport)
+
+    assert pump.actual_spd == 820
+
+
+def test_query_discards_echo_other_address_and_garbled_frames() -> None:
+    echo = (
+        create_telegram(parameter=Parameters.ActualSpd, address=1).message + "\r"
+    ).encode("ascii")
+    transport = FakeTransport(
+        [
+            echo,
+            _reply(Parameters.ActualSpd, 111, address=2),
+            b"0011030900060008\r",
+            b"\xff\xfe\r",
+            _reply(Parameters.ActualSpd, 820),
+        ]
+    )
+    pump = TM700(address=1, transport=transport)
+
+    assert pump.actual_spd == 820
+
+
+def test_query_without_matching_reply_raises_after_deadline() -> None:
+    transport = FakeTransport([_reply(Parameters.TempMotor, 45)])
+    pump = TM700(address=1, transport=transport)
+
+    with pytest.raises(PfeifferProtocolError, match="1 unrelated frame"):
+        _ = pump.actual_spd
+
+
+def test_query_without_any_reply_raises() -> None:
+    pump = TM700(address=1, transport=FakeTransport([]))
+
+    with pytest.raises(PfeifferProtocolError, match="No response received"):
+        _ = pump.actual_spd
+
+
+def test_query_rejects_incomplete_reply() -> None:
+    pump = TM700(address=1, transport=FakeTransport([b"00110309"]))
+
+    with pytest.raises(PfeifferProtocolError, match="Incomplete response"):
+        _ = pump.actual_spd
+
+
+def test_query_reports_drive_unit_error_reply() -> None:
+    transport = FakeTransport([_raw_reply("0011030806_RANGE")])
+    pump = TM700(address=1, transport=transport)
+
+    with pytest.raises(PfeifferProtocolError, match="_RANGE"):
+        pump.set_rot_spd = 600
+
+
+def test_setter_waits_for_its_own_reply() -> None:
+    transport = FakeTransport(
+        [_reply(Parameters.ActualSpd, 820), _reply(Parameters.SetRotSpd, 600)]
+    )
+    pump = TM700(address=1, transport=transport)
+
+    pump.set_rot_spd = 600
+
+    assert transport._responses == []

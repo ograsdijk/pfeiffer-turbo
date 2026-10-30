@@ -44,6 +44,14 @@ pump.start()
 pump.stop()
 ```
 
+`query()` accepts only the reply from the queried address for the queried
+parameter. A late reply to an earlier query (for example one still buffered in
+a serial-to-TCP gateway after a timeout), an echo of the request, or a garbled
+frame is discarded, and reading continues until the matching reply arrives or
+the transport timeout runs out. The timeout bounds the whole exchange, not each
+byte. A reply in which the drive unit rejects the request (`NO_DEF`, `_RANGE`,
+`_LOGIC`) raises `PfeifferProtocolError`.
+
 ## Writable parameters and validation
 
 Parameters marked read-write or write-only by the parameter metadata can be assigned.

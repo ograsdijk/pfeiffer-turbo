@@ -120,19 +120,18 @@ def create_telegram(
     return telegram
 
 
-def decode_telegram(message: str) -> Telegram:
+def parse_telegram_header(message: str) -> tuple[int, int, int]:
     """
-    Decode a string received from a Pfeiffer turbo drive unit into a Telegram
+    Validate a telegram's framing and checksum and return its header fields
 
     Args:
         message (str): message from Pfeiffer turbo drive unit
 
     Raises:
-        ValueError: Cannot decode boolean datatype
-        ValueError: Checksum incorrect
+        PfeifferProtocolError: malformed telegram or incorrect checksum
 
     Returns:
-        Telegram: Telegram containing all the message information
+        tuple[int, int, int]: address, action and parameter number
     """
     message = message.strip()
     if len(message) < 13:
@@ -177,10 +176,36 @@ def decode_telegram(message: str) -> Telegram:
         raise PfeifferProtocolError("Checksum incorrect")
 
     try:
-        parameter = Parameters(int(message[5:8]))
+        parameter_number = int(message[5:8])
     except ValueError as exc:
         raise PfeifferProtocolError("Invalid parameter field in telegram") from exc
 
+    return address, action, parameter_number
+
+
+def decode_telegram(message: str) -> Telegram:
+    """
+    Decode a string received from a Pfeiffer turbo drive unit into a Telegram
+
+    Args:
+        message (str): message from Pfeiffer turbo drive unit
+
+    Raises:
+        ValueError: Cannot decode boolean datatype
+        ValueError: Checksum incorrect
+
+    Returns:
+        Telegram: Telegram containing all the message information
+    """
+    message = message.strip()
+    address, action, parameter_number = parse_telegram_header(message)
+
+    try:
+        parameter = Parameters(parameter_number)
+    except ValueError as exc:
+        raise PfeifferProtocolError("Invalid parameter field in telegram") from exc
+
+    data_length = int(message[8:10])
     data = message[10:-3]
     data_type = parameters[parameter].data_type
 

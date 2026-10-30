@@ -1,14 +1,29 @@
 from __future__ import annotations
 
 import re
+import time
 from collections.abc import Sequence
 from types import TracebackType
 from typing import Self
 
 from .errors import PfeifferProtocolError
 from .parameters import Access, DataType, Parameters, parameters
-from .telegram import Telegram, create_telegram, decode_telegram
+from .telegram import (
+    Telegram,
+    create_telegram,
+    decode_telegram,
+    parse_telegram_header,
+)
 from .transport import BaseTransport, SerialTransport, TcpTransport
+
+_DEFAULT_RESPONSE_TIMEOUT_S = 1.0
+
+# Data field of a reply in which the drive unit rejects a request.
+_ERROR_REPLIES = {
+    "NO_DEF": "parameter does not exist",
+    "_RANGE": "data outside the permitted range",
+    "_LOGIC": "logic access violation",
+}
 
 
 def _python_type_for_data_type(
@@ -258,6 +273,15 @@ class DriveUnit:
         self.close()
 
     def query(self, telegram: Telegram) -> Telegram:
+        """
+        Send a telegram and return the drive unit's reply to it.
+
+        Only a reply from the queried address for the queried parameter is
+        accepted. Anything else that arrives first -- a late reply to an
+        earlier query (e.g. one buffered in a serial-to-TCP gateway), an echo
+        of the request, or a garbled frame -- is discarded and reading
+        continues until the matching reply or the response deadline.
+        """
         if not self.transport.is_open:
             raise PfeifferProtocolError(
                 "Transport is closed. Call open() before query()."
@@ -265,17 +289,59 @@ class DriveUnit:
 
         self.transport.flush_input()
         self.transport.write((telegram.message + "\r").encode("ascii"))
-        response = self.transport.read_until(b"\r")
 
-        if not response:
-            raise PfeifferProtocolError("No response received from transport.")
+        deadline = time.monotonic() + self._response_timeout_s()
+        discarded = 0
+        while True:
+            remaining_s = deadline - time.monotonic()
+            if remaining_s <= 0:
+                raise PfeifferProtocolError(
+                    f"No reply for parameter {telegram.parameter.value} from "
+                    f"address {telegram.address} "
+                    f"({discarded} unrelated frame(s) discarded)."
+                )
+            response = self.transport.read_until(b"\r", timeout_s=remaining_s)
+            if not response:
+                if discarded:
+                    continue
+                raise PfeifferProtocolError("No response received from transport.")
+            if not response.endswith(b"\r"):
+                raise PfeifferProtocolError(
+                    f"Incomplete response from transport: {response!r}"
+                )
 
+            try:
+                message = response.decode("ascii").strip()
+                address, action, parameter_number = parse_telegram_header(message)
+            except (UnicodeDecodeError, PfeifferProtocolError):
+                discarded += 1
+                continue
+            if (
+                address != telegram.address
+                or action != 1
+                or parameter_number != telegram.parameter.value
+            ):
+                discarded += 1
+                continue
+
+            data = message[10:-3]
+            if data in _ERROR_REPLIES:
+                raise PfeifferProtocolError(
+                    f"Drive unit rejected parameter {telegram.parameter.value}: "
+                    f"{data} ({_ERROR_REPLIES[data]})"
+                )
+            try:
+                return decode_telegram(message)
+            except ValueError as exc:
+                raise PfeifferProtocolError(
+                    f"Failed to decode telegram response: {response!r}"
+                ) from exc
+
+    def _response_timeout_s(self) -> float:
         try:
-            return decode_telegram(response.decode("ascii").strip())
-        except (UnicodeDecodeError, ValueError) as exc:
-            raise PfeifferProtocolError(
-                f"Failed to decode telegram response: {response!r}"
-            ) from exc
+            return float(self.transport.timeout_s)
+        except NotImplementedError:
+            return _DEFAULT_RESPONSE_TIMEOUT_S
 
     def start(self):
         """
